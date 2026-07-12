@@ -1,0 +1,6 @@
+ticket_id,ticket_text,category,urgency,assignment_group,resolution
+INC001,I cannot connect to VPN after changing my password,Network,Medium,Network Support,Reset VPN profile and verify MFA access
+INC002,I forgot my password and cannot login,Access,Low,IT Helpdesk,Guide user through password reset process
+INC003,My laptop screen is flickering,Hardware,Medium,Hardware Support,Check display driver and arrange hardware inspection
+INC004,Outlook is not sending emails,Email,Low,Messaging Support,Check mailbox quota and Outlook configuration
+INC005,WiFi is very slow in the meeting room,Network,Medium,Network Support,Check access point and network connectivity

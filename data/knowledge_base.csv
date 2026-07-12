@@ -1,0 +1,6 @@
+article_id,title,category,content
+KB001,VPN Troubleshooting Guide,Network,"If a user cannot connect to VPN, first check internet connection, MFA approval, VPN profile, password status, and whether the account is locked. If the issue continues, reset the VPN profile and escalate to Network Support."
+KB002,Password Reset Guide,Access,"If a user forgot their password or cannot login, guide them through the password reset portal. Check whether the account is locked. If MFA is enabled, verify that the user can approve authentication."
+KB003,Laptop Display Issue Guide,Hardware,"If a laptop screen is flickering or not working, check display brightness, external monitor output, display driver updates, cable damage, and possible hardware failure."
+KB004,Outlook Email Troubleshooting Guide,Email,"If Outlook is not sending or receiving emails, check internet connection, mailbox quota, Outlook profile configuration, server status, and authentication issues."
+KB005,WiFi Connectivity Guide,Network,"If WiFi is slow or unstable, check signal strength, access point status, number of connected users, network congestion, and router configuration."
