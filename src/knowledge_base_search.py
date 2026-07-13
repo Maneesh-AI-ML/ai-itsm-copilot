@@ -45,9 +45,20 @@ def find_relevant_articles(ticket_text, top_n=2):
             "similarity_score": score
         })
 
-    results = sorted(results, key=lambda x: x["similarity_score"], reverse=True)
+    # Remove articles that have no meaningful similarity
+        relevant_results = [
+        result
+        for result in results
+        if result["similarity_score"] >= 0.01
+]
 
-    return results[:top_n]
+        relevant_results = sorted(
+        relevant_results,
+        key=lambda x: x["similarity_score"],
+        reverse=True,
+)
+
+    return relevant_results[:top_n]
 
 
 if __name__ == "__main__":

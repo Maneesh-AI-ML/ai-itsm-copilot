@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 .vscode/
+
+# Original downloaded datasets
+data/raw/*.csv
