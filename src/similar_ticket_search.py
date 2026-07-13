@@ -1,69 +1,51 @@
-import string
 from load_tickets import load_tickets
 
-
-STOP_WORDS = {
-    "i", "am", "is", "are", "the", "a", "an", "to", "and", "or",
-    "after", "before", "my", "me", "in", "on", "for", "with",
-    "cannot", "can", "not", "this", "that"
-}
-
-
-def clean_text(text):
-    """
-    Convert text into useful words.
-    Example:
-    'I cannot connect to VPN after changing my password'
-    becomes:
-    {'connect', 'vpn', 'changing', 'password'}
-    """
-
-    text = text.lower()
-
-    # Remove punctuation like . , ! ?
-    text = text.translate(str.maketrans("", "", string.punctuation))
-
-    words = text.split()
-
-    useful_words = set()
-
-    for word in words:
-        if word not in STOP_WORDS:
-            useful_words.add(word)
-
-    return useful_words
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def calculate_similarity(text1, text2):
     """
-    Compare two texts using shared words.
-    More shared useful words = more similar.
+    Compare two texts using TF-IDF and cosine similarity.
+    This is better than simple word overlap.
     """
 
-    words1 = clean_text(text1)
-    words2 = clean_text(text2)
+    documents = [text1, text2]
 
-    if not words1 or not words2:
-        return 0
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(documents)
 
-    common_words = words1.intersection(words2)
-    all_words = words1.union(words2)
-
-    similarity_score = len(common_words) / len(all_words)
+    similarity_score = cosine_similarity(
+        tfidf_matrix[0:1],
+        tfidf_matrix[1:2]
+    )[0][0]
 
     return similarity_score
 
 
 def find_similar_tickets(new_ticket_text, tickets, top_n=3):
     """
-    Find the most similar old tickets.
+    Find the most similar old tickets using TF-IDF similarity.
     """
+
+    ticket_texts = [ticket["ticket_text"] for ticket in tickets]
+
+    documents = [new_ticket_text] + ticket_texts
+
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(documents)
+
+    new_ticket_vector = tfidf_matrix[0:1]
+    old_ticket_vectors = tfidf_matrix[1:]
+
+    similarity_scores = cosine_similarity(
+        new_ticket_vector,
+        old_ticket_vectors
+    )[0]
 
     results = []
 
-    for ticket in tickets:
-        score = calculate_similarity(new_ticket_text, ticket["ticket_text"])
-
+    for ticket, score in zip(tickets, similarity_scores):
         results.append({
             "ticket_id": ticket["ticket_id"],
             "ticket_text": ticket["ticket_text"],
