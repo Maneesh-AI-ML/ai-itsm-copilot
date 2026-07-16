@@ -6,3 +6,6 @@ __pycache__/
 
 # Original downloaded datasets
 data/raw/*.csv
+data/audit_log.csv
+data/agent_audit_log.csv
+data/mock_writeback.csv
