@@ -48,6 +48,33 @@ def generate_llm_text(prompt):
 
     return response.strip()
 
+def request_llm_tool_call(
+    messages,
+    tools,
+    tool_choice="auto",
+):
+    """
+    Ask the configured LLM whether it wants to call an available tool.
+    """
+
+    api_key = os.getenv("GROQ_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY was not found in the .env file."
+        )
+
+    client = Groq(api_key=api_key)
+
+    completion = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=messages,
+        tools=tools,
+        tool_choice=tool_choice,
+        temperature=0,
+    )
+
+    return completion.choices[0].message
 
 if __name__ == "__main__":
     test_prompt = (
