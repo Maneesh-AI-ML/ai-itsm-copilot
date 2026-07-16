@@ -340,9 +340,13 @@ If a retrieved historical resolution is vague, incomplete, or broken, the applic
   <img src="docs/images/software-ticket-example.png" width="95%" alt="AI ITSM Copilot ticket analysis example">
 </p>
 
-The screenshot currently shows the original deterministic triage workflow.
+### Agentic workflow
 
-An updated agentic-workflow screenshot will be added after the final interface review.
+<p align="center">
+  <img src="docs/images/agentic-workflow-example.png" width="95%" alt="AI ITSM Copilot human-reviewed agentic workflow">
+</p>
+
+Example: controlled tool-using analysis with an editable response, human approval, local mock write-back confirmation, and visible tool trace.
 
 ---
 
