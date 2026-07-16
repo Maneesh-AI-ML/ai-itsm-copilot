@@ -129,6 +129,8 @@ def run_agent(ticket_text):
                 "knowledge-base guidance using the available tools. "
                 "Use each tool only once. "
                 "Base the final answer only on the ticket and tool results. "
+                "Never present details from a similar historical ticket as facts "
+                "about the current user. Clearly label them as historical evidence. "
                 "Do not invent facts, contact details, or completed actions."
             ),
         },

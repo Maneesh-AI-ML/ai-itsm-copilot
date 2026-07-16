@@ -4,14 +4,20 @@ from pathlib import Path
 import streamlit as st
 
 
+
 # Allow this app file to import code from the src folder
 BASE_DIR = Path(__file__).resolve().parent.parent
 SRC_DIR = BASE_DIR / "src"
 sys.path.append(str(SRC_DIR))
 
 from triage_assistant import create_triage_suggestion
+from agent_orchestrator import run_agent
+from mock_writeback import save_mock_writeback
 
-from audit_log import save_review_to_audit_log
+from audit_log import (
+    save_agent_review_to_audit_log,
+    save_review_to_audit_log,
+)
 
 st.set_page_config(
     page_title="AI ITSM Copilot",
@@ -23,6 +29,21 @@ st.set_page_config(
 # Create temporary memory for the latest triage suggestion
 if "suggestion" not in st.session_state:
     st.session_state.suggestion = None
+
+if "agent_result" not in st.session_state:
+    st.session_state.agent_result = None
+
+if "agent_review_status" not in st.session_state:
+    st.session_state.agent_review_status = "Pending human review"
+
+if "agent_response_editor" not in st.session_state:
+    st.session_state.agent_response_editor = ""
+
+if "agent_ticket_text" not in st.session_state:
+    st.session_state.agent_ticket_text = ""
+
+if "agent_writeback_result" not in st.session_state:
+    st.session_state.agent_writeback_result = None
 
 if "review_status" not in st.session_state:
     st.session_state.review_status = "Pending human review"
@@ -57,18 +78,53 @@ def save_current_review(review_status):
 def approve_recommendation():
     save_current_review("Approved")
 
+def save_current_agent_review(review_status):
+    agent_result = st.session_state.agent_result
+
+    if agent_result is None:
+        return
+
+    save_agent_review_to_audit_log(
+        ticket_text=st.session_state.agent_ticket_text,
+        review_status=review_status,
+        agent_response=st.session_state.agent_response_editor,
+        tool_trace=agent_result["tool_trace"],
+    )
+
+    st.session_state.agent_review_status = review_status
+
+
+def approve_agent_result():
+    save_current_agent_review("Approved")
+
 
 def reject_recommendation():
     save_current_review("Rejected")
 
 
-def mark_as_edited():
-    st.session_state.review_status = "Edited - pending approval"
- 
-st.title("AI ITSM Copilot")
+def reject_agent_result():
+    save_current_agent_review("Rejected")
+
+def mark_agent_as_edited():
+    if st.session_state.agent_result is not None:
+        st.session_state.agent_review_status = (
+            "Edited - pending approval"
+        )
+        st.session_state.agent_writeback_result = None
+
+
+def write_approved_agent_result():
+    st.session_state.agent_writeback_result = save_mock_writeback(
+        ticket_text=st.session_state.agent_ticket_text,
+        review_status=st.session_state.agent_review_status,
+        agent_response=st.session_state.agent_response_editor,
+    )
 
 def mark_as_edited():
     st.session_state.review_status = "Edited - pending approval"
+
+
+st.title("AI ITSM Copilot")
 
 st.write(
     "ServiceNow-style incident triage assistant for category, urgency, "
@@ -84,6 +140,7 @@ ticket_text = st.text_area(
 
 
 analyze_button = st.button("Analyze Ticket")
+agent_button = st.button("Run Agentic Analysis")
 
 
 if analyze_button:
@@ -97,9 +154,84 @@ if analyze_button:
         
         st.session_state.pop("user_response_editor", None)
         st.session_state.pop("internal_work_note_editor", None)
+if agent_button:
+    if not ticket_text.strip():
+        st.warning("Please enter a ticket description.")
+    else:
+        st.session_state.agent_review_status = "Pending human review"
+        st.session_state.agent_writeback_result = None
+        st.session_state.agent_ticket_text = ticket_text
+
+        try:
+            with st.spinner("Running agent tools..."):
+                st.session_state.agent_result = run_agent(
+                    ticket_text
+                )
+
+                st.session_state.agent_response_editor = (
+                    st.session_state.agent_result["final_response"]
+                )
+
+        except Exception:
+            st.session_state.agent_result = None
+            st.session_state.agent_response_editor = ""
+
+            st.error(
+                "Agentic analysis is temporarily unavailable. "
+                "You can still use Analyze Ticket for the reliable "
+                "deterministic workflow."
+            )
 
 suggestion = st.session_state.suggestion
+agent_result = st.session_state.agent_result
 
+if agent_result is not None:
+    st.subheader("Agentic Analysis")
+
+    st.info(
+        f"Agent review status: "
+        f"{st.session_state.agent_review_status}"
+    )
+
+    st.text_area(
+        "Editable Agent Response",
+        key="agent_response_editor",
+        height=220,
+        on_change=mark_agent_as_edited,
+    )
+
+    st.button(
+        "Approve Agent Result",
+        on_click=approve_agent_result,
+    )
+
+    st.button(
+        "Reject Agent Result",
+        on_click=reject_agent_result,
+    )
+
+    st.button(
+        "Write Approved Result Locally",
+        on_click=write_approved_agent_result,
+    )
+
+    writeback_result = st.session_state.agent_writeback_result
+
+    if writeback_result is not None:
+        if writeback_result["success"]:
+            st.success(writeback_result["message"])
+        else:
+            st.error(writeback_result["message"])
+
+    st.subheader("Agent Tool Trace")
+
+    for step in agent_result["tool_trace"]:
+        with st.expander(step["tool_name"]):
+            st.write("Arguments:")
+            st.json(step["arguments"])
+
+            st.write("Result:")
+            st.json(step["result"])
 
 if suggestion is not None:
     st.info(
