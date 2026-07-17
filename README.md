@@ -4,7 +4,7 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)
 ![ServiceNow](https://img.shields.io/badge/ServiceNow-Integrated_MVP-81B5A1)
 ![Status](https://img.shields.io/badge/Status-Human--in--the--Loop_Agentic_MVP-success)
-![Tests](https://img.shields.io/badge/Tests-8_Passing-success)
+![Tests](https://img.shields.io/badge/Tests-14_Passing-success)
 
 A human-in-the-loop, GenAI-enabled, tool-using ITSM copilot for support-ticket triage, historical-ticket retrieval, knowledge-base guidance, response generation, review, audit logging, and approval-controlled ServiceNow write-back.
 
@@ -553,7 +553,7 @@ data/mock_writeback.csv
 
 ## Automated tests
 
-The project currently includes eight passing automated tests.
+The project currently includes fourteen passing automated tests.
 
 Coverage includes:
 
@@ -576,7 +576,7 @@ python -m unittest discover -s tests -v
 Expected result:
 
 ```text
-Ran 8 tests
+Ran 14 tests
 
 OK
 ```
