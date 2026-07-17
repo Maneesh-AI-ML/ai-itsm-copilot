@@ -4,20 +4,23 @@ from pathlib import Path
 import streamlit as st
 
 
-
 # Allow this app file to import code from the src folder
 BASE_DIR = Path(__file__).resolve().parent.parent
 SRC_DIR = BASE_DIR / "src"
 sys.path.append(str(SRC_DIR))
 
-from triage_assistant import create_triage_suggestion
 from agent_orchestrator import run_agent
-from mock_writeback import save_mock_writeback
-
 from audit_log import (
     save_agent_review_to_audit_log,
     save_review_to_audit_log,
 )
+from mock_writeback import save_mock_writeback
+from servicenow_service import (
+    add_work_note_to_incident,
+    get_incident_by_number,
+)
+from triage_assistant import create_triage_suggestion
+
 
 st.set_page_config(
     page_title="AI ITSM Copilot",
@@ -26,7 +29,7 @@ st.set_page_config(
 )
 
 
-# Create temporary memory for the latest triage suggestion
+# Session state
 if "suggestion" not in st.session_state:
     st.session_state.suggestion = None
 
@@ -45,8 +48,21 @@ if "agent_ticket_text" not in st.session_state:
 if "agent_writeback_result" not in st.session_state:
     st.session_state.agent_writeback_result = None
 
+if "servicenow_writeback_result" not in st.session_state:
+    st.session_state.servicenow_writeback_result = None
+
+if "servicenow_incident" not in st.session_state:
+    st.session_state.servicenow_incident = None
+
+if "servicenow_incident_number" not in st.session_state:
+    st.session_state.servicenow_incident_number = ""
+
+if "ticket_input" not in st.session_state:
+    st.session_state.ticket_input = ""
+
 if "review_status" not in st.session_state:
     st.session_state.review_status = "Pending human review"
+
 
 def save_current_review(review_status):
     suggestion = st.session_state.suggestion
@@ -78,6 +94,11 @@ def save_current_review(review_status):
 def approve_recommendation():
     save_current_review("Approved")
 
+
+def reject_recommendation():
+    save_current_review("Rejected")
+
+
 def save_current_agent_review(review_status):
     agent_result = st.session_state.agent_result
 
@@ -98,12 +119,9 @@ def approve_agent_result():
     save_current_agent_review("Approved")
 
 
-def reject_recommendation():
-    save_current_review("Rejected")
-
-
 def reject_agent_result():
     save_current_agent_review("Rejected")
+
 
 def mark_agent_as_edited():
     if st.session_state.agent_result is not None:
@@ -111,6 +129,7 @@ def mark_agent_as_edited():
             "Edited - pending approval"
         )
         st.session_state.agent_writeback_result = None
+        st.session_state.servicenow_writeback_result = None
 
 
 def write_approved_agent_result():
@@ -119,6 +138,57 @@ def write_approved_agent_result():
         review_status=st.session_state.agent_review_status,
         agent_response=st.session_state.agent_response_editor,
     )
+
+
+def write_approved_agent_result_to_servicenow():
+    if st.session_state.agent_review_status != "Approved":
+        st.session_state.servicenow_writeback_result = {
+            "success": False,
+            "message": (
+                "ServiceNow write-back blocked: "
+                "the agent result is not approved."
+            ),
+        }
+        return
+
+    incident = st.session_state.servicenow_incident
+
+    if incident is None:
+        st.session_state.servicenow_writeback_result = {
+            "success": False,
+            "message": (
+                "ServiceNow write-back blocked: "
+                "no ServiceNow incident is loaded."
+            ),
+        }
+        return
+
+    incident_sys_id = incident.get("sys_id")
+    incident_number = incident.get("number", "incident")
+
+    try:
+        add_work_note_to_incident(
+            incident_sys_id=incident_sys_id,
+            work_note=st.session_state.agent_response_editor,
+        )
+
+        st.session_state.servicenow_writeback_result = {
+            "success": True,
+            "message": (
+                f"Approved result written to "
+                f"{incident_number} work notes."
+            ),
+        }
+
+    except Exception:
+        st.session_state.servicenow_writeback_result = {
+            "success": False,
+            "message": (
+                "Could not write to ServiceNow. "
+                "The incident was not updated."
+            ),
+        }
+
 
 def mark_as_edited():
     st.session_state.review_status = "Edited - pending approval"
@@ -132,10 +202,105 @@ st.write(
 )
 
 
+# ServiceNow incident loader
+st.subheader("Load Incident from ServiceNow")
+
+incident_col, load_col = st.columns([3, 1])
+
+with incident_col:
+    st.text_input(
+        "ServiceNow Incident Number",
+        placeholder="Example: INC0010010",
+        key="servicenow_incident_number",
+    )
+
+with load_col:
+    st.write("")
+    st.write("")
+    load_incident_button = st.button("Load Incident")
+
+
+if load_incident_button:
+    incident_number = (
+        st.session_state.servicenow_incident_number
+        .strip()
+        .upper()
+    )
+
+    if not incident_number:
+        st.warning("Please enter a ServiceNow incident number.")
+
+    else:
+        try:
+            with st.spinner("Loading incident from ServiceNow..."):
+                incident = get_incident_by_number(
+                    incident_number
+                )
+
+            if incident is None:
+                st.session_state.servicenow_incident = None
+                st.warning(
+                    f"Incident {incident_number} was not found."
+                )
+
+            else:
+                st.session_state.servicenow_incident = incident
+
+                st.session_state.agent_result = None
+                st.session_state.agent_response_editor = ""
+                st.session_state.agent_ticket_text = ""
+                st.session_state.agent_review_status = (
+                    "Pending human review"
+                )
+                st.session_state.agent_writeback_result = None
+                st.session_state.servicenow_writeback_result = None
+
+                short_description = (
+                    incident.get("short_description", "")
+                    or ""
+                ).strip()
+
+                description = (
+                    incident.get("description", "")
+                    or ""
+                ).strip()
+
+                ticket_parts = []
+
+                if short_description:
+                    ticket_parts.append(short_description)
+
+                if (
+                    description
+                    and description.lower()
+                    != short_description.lower()
+                ):
+                    ticket_parts.append(description)
+
+                st.session_state.ticket_input = (
+                    "\n\n".join(ticket_parts)
+                )
+
+                st.success(
+                    f"Loaded {incident.get('number')} "
+                    "from ServiceNow."
+                )
+
+        except Exception:
+            st.session_state.servicenow_incident = None
+
+            st.error(
+                "Could not load the incident from ServiceNow. "
+                "Please check the incident number and local "
+                "ServiceNow configuration."
+            )
+
+
 ticket_text = st.text_area(
-    "Enter a new support ticket",
-    placeholder="Example: VPN not working after password reset",
+    "Support Ticket for Analysis",
+    placeholder="Enter a ticket manually or load one from ServiceNow",
     height=120,
+    key="ticket_input",
 )
 
 
@@ -143,23 +308,30 @@ analyze_button = st.button("Analyze Ticket")
 agent_button = st.button("Run Agentic Analysis")
 
 
+# Deterministic analysis
 if analyze_button:
     if not ticket_text.strip():
         st.warning("Please enter a ticket description.")
+
     else:
         st.session_state.suggestion = create_triage_suggestion(
             ticket_text
         )
         st.session_state.review_status = "Pending human review"
-        
+
         st.session_state.pop("user_response_editor", None)
         st.session_state.pop("internal_work_note_editor", None)
+
+
+# Agentic analysis
 if agent_button:
     if not ticket_text.strip():
         st.warning("Please enter a ticket description.")
+
     else:
         st.session_state.agent_review_status = "Pending human review"
         st.session_state.agent_writeback_result = None
+        st.session_state.servicenow_writeback_result = None
         st.session_state.agent_ticket_text = ticket_text
 
         try:
@@ -182,9 +354,12 @@ if agent_button:
                 "deterministic workflow."
             )
 
+
 suggestion = st.session_state.suggestion
 agent_result = st.session_state.agent_result
 
+
+# Agentic result
 if agent_result is not None:
     st.subheader("Agentic Analysis")
 
@@ -215,6 +390,11 @@ if agent_result is not None:
         on_click=write_approved_agent_result,
     )
 
+    st.button(
+        "Write Approved Result to ServiceNow",
+        on_click=write_approved_agent_result_to_servicenow,
+    )
+
     writeback_result = st.session_state.agent_writeback_result
 
     if writeback_result is not None:
@@ -222,6 +402,20 @@ if agent_result is not None:
             st.success(writeback_result["message"])
         else:
             st.error(writeback_result["message"])
+
+    servicenow_writeback_result = (
+        st.session_state.servicenow_writeback_result
+    )
+
+    if servicenow_writeback_result is not None:
+        if servicenow_writeback_result["success"]:
+            st.success(
+                servicenow_writeback_result["message"]
+            )
+        else:
+            st.error(
+                servicenow_writeback_result["message"]
+            )
 
     st.subheader("Agent Tool Trace")
 
@@ -233,6 +427,8 @@ if agent_result is not None:
             st.write("Result:")
             st.json(step["result"])
 
+
+# Deterministic result
 if suggestion is not None:
     st.info(
         f"Review status: {st.session_state.review_status}"
@@ -304,20 +500,23 @@ if suggestion is not None:
             )
 
             st.write(article["content"])
+
     st.caption(
-    f"Response source: {suggestion['response_source']}"
-)
+        f"Response source: {suggestion['response_source']}"
+    )
+
     st.subheader("Draft Response to User")
-    
+
     st.text_area(
-    "User-facing response",
-    value=suggestion["user_response"],
-    height=220,
-    key="user_response_editor",
-    on_change=mark_as_edited,
-)
+        "User-facing response",
+        value=suggestion["user_response"],
+        height=220,
+        key="user_response_editor",
+        on_change=mark_as_edited,
+    )
+
     st.subheader("Internal Work Note")
-    
+
     st.button(
         "Approve Recommendation",
         on_click=approve_recommendation,
