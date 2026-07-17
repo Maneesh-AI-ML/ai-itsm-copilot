@@ -1,26 +1,26 @@
 # AI ITSM Copilot
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python\&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)
+![ServiceNow](https://img.shields.io/badge/ServiceNow-Integrated_MVP-81B5A1)
 ![Status](https://img.shields.io/badge/Status-Human--in--the--Loop_Agentic_MVP-success)
 ![Tests](https://img.shields.io/badge/Tests-8_Passing-success)
 
-A human-in-the-loop, GenAI-enabled, tool-using ITSM copilot for support-ticket triage, historical-ticket retrieval, knowledge-base guidance, response generation, review, audit logging, and controlled local write-back.
+A human-in-the-loop, GenAI-enabled, tool-using ITSM copilot for support-ticket triage, historical-ticket retrieval, knowledge-base guidance, response generation, review, audit logging, and approval-controlled ServiceNow write-back.
 
-The project currently supports two complementary workflows:
+The project supports three connected capabilities:
 
 1. a reliable deterministic triage workflow
 2. a controlled LLM-powered agentic workflow
+3. a working ServiceNow incident read and approved `work_notes` write-back flow
 
 The application is designed in a provider-neutral way, with Groq currently used as the first working LLM adapter.
-
-> This project is not yet integrated with ServiceNow. The current write-back feature saves approved agent results locally and is designed to be replaced later by ServiceNow `work_notes` REST API write-back.
 
 ---
 
 ## What the application does
 
-A user enters a support ticket in the Streamlit interface.
+A user can either enter a support ticket manually or load an incident from ServiceNow by incident number.
 
 The application can then run either the deterministic workflow or the agentic workflow.
 
@@ -65,8 +65,41 @@ The agent workflow:
 * clearly labels similar-ticket information as historical evidence
 * prevents invented facts or contact information
 * allows the final response to be edited
-* requires human approval before local write-back
+* requires human approval before write-back
 * saves approval or rejection decisions to an audit log
+
+### ServiceNow integration
+
+The Streamlit application can:
+
+* accept a ServiceNow incident number
+* retrieve the matching incident through the ServiceNow Table API
+* load the incident short description and description into the analysis field
+* run the existing agentic workflow on the retrieved incident
+* block ServiceNow write-back until the result is approved
+* write the approved response to the incident `work_notes` field
+* show a clear success or failure message
+* clear stale agent results when a different incident is loaded
+
+The working flow is:
+
+```text
+ServiceNow incident number
+        ↓
+Table API incident read
+        ↓
+Streamlit ticket field
+        ↓
+Controlled agentic analysis
+        ↓
+Human edit and approval
+        ↓
+Approved work note
+        ↓
+ServiceNow incident work_notes
+```
+
+This implementation has been manually validated with a ServiceNow Personal Developer Instance.
 
 ---
 
@@ -116,6 +149,7 @@ Available review actions:
 * Approve Agent Result
 * Reject Agent Result
 * Write Approved Result Locally
+* Write Approved Result to ServiceNow
 
 Editing an already approved agent response changes its status back to:
 
@@ -123,7 +157,7 @@ Editing an already approved agent response changes its status back to:
 Edited - pending approval
 ```
 
-This prevents an edited response from being written without renewed human approval.
+This prevents edited content from being written locally or to ServiceNow without renewed human approval.
 
 ---
 
@@ -171,9 +205,11 @@ Runtime audit files are excluded from Git.
 
 ---
 
-## Controlled mock write-back
+## Controlled write-back
 
-The current project includes a local mock write-back component.
+The project currently supports two write-back paths.
+
+### Local mock write-back
 
 Runtime file:
 
@@ -181,18 +217,31 @@ Runtime file:
 data/mock_writeback.csv
 ```
 
-The write-back function:
+The local write-back function:
 
 * blocks unapproved results
 * accepts only an Approved agent result
 * saves the approved response locally
 * returns a clear success or failure message in Streamlit
 
-This component is temporary.
+This remains useful for offline demonstrations and testing.
 
-Later, the same approval-controlled interface is intended to call the ServiceNow REST API and write the approved result into incident `work_notes`.
+### ServiceNow work-note write-back
 
-No ServiceNow API connection is currently claimed or implemented.
+The ServiceNow write-back function:
+
+* requires a loaded ServiceNow incident
+* requires the agent result to be Approved
+* uses the incident `sys_id`
+* sends the approved response to the incident `work_notes` field
+* blocks unapproved or missing-incident write-back
+* returns a clear success or failure message without exposing credentials
+
+Important file:
+
+```text
+src/servicenow_service.py
+```
 
 ---
 
@@ -213,7 +262,7 @@ src/llm_service.py
 src/llm_response_generator.py
 ```
 
-`llm_service.py` isolates provider-specific code so that another provider can be added later without redesigning the full application.
+`llm_service.py` isolates provider-specific code so another provider can be added later without redesigning the full application.
 
 The API key is loaded locally from:
 
@@ -238,11 +287,11 @@ If the agentic workflow fails:
 
 ## Public dataset integration
 
-| Dataset stage     | Tickets |
-| ----------------- | ------: |
-| Original dataset  |  28,587 |
-| English tickets   |  16,338 |
-| Final ITSM subset |   4,265 |
+| Dataset stage | Tickets |
+| --- | ---: |
+| Original dataset | 28,587 |
+| English tickets | 16,338 |
+| Final ITSM subset | 4,265 |
 
 **Source:** [Tobi-Bueck Customer Support Tickets dataset on Hugging Face](https://huggingface.co/datasets/Tobi-Bueck/customer-support-tickets)
 
@@ -298,15 +347,15 @@ The raw downloaded dataset is excluded from Git.
 
 ## Generated ticket categories
 
-| Category       | Tickets |
-| -------------- | ------: |
-| Software       |   2,108 |
-| Network        |     688 |
-| General        |     627 |
-| Service Outage |     502 |
-| Access         |     196 |
-| Hardware       |     108 |
-| Email          |      36 |
+| Category | Tickets |
+| --- | ---: |
+| Software | 2,108 |
+| Network | 688 |
+| General | 627 |
+| Service Outage | 502 |
+| Access | 196 |
+| Hardware | 108 |
+| Email | 36 |
 
 > These categories were generated by the project’s rule-based classifier. They are not original ground-truth labels from the source dataset.
 
@@ -354,7 +403,9 @@ Example: controlled tool-using analysis with an editable response, human approva
 
 ```mermaid
 flowchart TD
-    A["Support Ticket"] --> B["Streamlit Interface"]
+    A["Manual Support Ticket"] --> B["Streamlit Interface"]
+    SN1["ServiceNow Incident Number"] --> SN2["ServiceNow Table API GET"]
+    SN2 --> B
 
     B --> C["Deterministic Workflow"]
     B --> D["Controlled Agentic Workflow"]
@@ -378,15 +429,15 @@ flowchart TD
     M --> O["search_similar_tickets"]
     M --> P["search_knowledge_base"]
 
-    N --> Q["Tool Trace"]
+    N --> Q["Visible Tool Trace"]
     O --> Q
     P --> Q
 
     Q --> R["Grounded Agent Recommendation"]
 
-    J --> S["Human Review"]
+    J --> S["Deterministic Human Review"]
     K --> S
-    R --> T["Editable Human Review"]
+    R --> T["Editable Agent Review"]
 
     S --> U["Approve or Reject"]
     T --> V["Approve, Edit, or Reject"]
@@ -395,7 +446,10 @@ flowchart TD
     V --> X["Agent Audit Log"]
 
     V -->|Approved only| Y["Local Mock Write-back"]
-    Y -. "Planned replacement" .-> Z["ServiceNow work_notes REST API"]
+    V -->|Approved only| Z["ServiceNow Table API PATCH"]
+    Z --> SN3["Incident work_notes"]
+
+    V -->|Not approved| BLOCK["Write-back Blocked"]
 ```
 
 ### Architecture principles
@@ -404,8 +458,10 @@ flowchart TD
 * LLM provider logic is isolated
 * the agent can execute only approved Python tools
 * tool execution remains controlled by the application
-* human approval is required before write-back
-* ServiceNow integration is clearly separated as future work
+* human approval is required before local or ServiceNow write-back
+* stale agent results are cleared when another ServiceNow incident is loaded
+* credentials remain in a local `.env` file excluded from Git
+* ServiceNow-specific logic is isolated in `src/servicenow_service.py`
 
 ---
 
@@ -425,6 +481,7 @@ ai-itsm-copilot/
 |
 |-- docs/
 |   `-- images/
+|       |-- agentic-workflow-example.png
 |       `-- software-ticket-example.png
 |
 |-- src/
@@ -438,6 +495,7 @@ ai-itsm-copilot/
 |   |-- mock_writeback.py
 |   |-- prepare_public_dataset.py
 |   |-- response_generator.py
+|   |-- servicenow_service.py
 |   |-- similar_ticket_search.py
 |   |-- ticket_classifier.py
 |   `-- triage_assistant.py
@@ -450,7 +508,7 @@ ai-itsm-copilot/
 `-- requirements.txt
 ```
 
-The following runtime files are generated locally and excluded from Git:
+The following runtime and secret files are generated locally and excluded from Git:
 
 ```text
 .env
@@ -471,6 +529,9 @@ data/mock_writeback.csv
 * cosine similarity
 * Groq API
 * Llama 3.1 8B Instant
+* ServiceNow Table API
+* Python Requests
+* python-dotenv
 * Python `unittest`
 * Git and GitHub
 
@@ -488,8 +549,8 @@ Coverage includes:
 * controlled agent tool trace
 * required tool execution
 * Approved and Rejected audit logging
-* blocked unapproved write-back
-* approved mock write-back
+* blocked unapproved local write-back
+* approved local mock write-back
 * template fallback when the LLM fails
 
 Run the tests with:
@@ -505,6 +566,8 @@ Ran 8 tests
 
 OK
 ```
+
+The live ServiceNow connection is currently validated manually rather than through automated tests.
 
 ---
 
@@ -528,11 +591,20 @@ cd C:\Users\MK\Documents\ai-itsm-copilot
 pip install -r requirements.txt
 ```
 
-### 4. Configure the Groq key locally
+### 4. Configure local environment variables
 
-Create a local `.env` file containing the Groq configuration required by `src/llm_service.py`.
+Create a local `.env` file containing:
+
+```text
+GROQ_API_KEY=your_local_groq_key
+SERVICENOW_INSTANCE_URL=https://your-instance.service-now.com
+SERVICENOW_USERNAME=your_local_username
+SERVICENOW_PASSWORD=your_local_password
+```
 
 Do not commit the `.env` file.
+
+The current ServiceNow connection uses credentials from the local environment for development and Personal Developer Instance testing.
 
 ### 5. Prepare the public dataset
 
@@ -560,6 +632,16 @@ python -m unittest discover -s tests -v
 python -m streamlit run app/streamlit_app.py
 ```
 
+### 8. Test the ServiceNow flow
+
+1. enter a valid incident number
+2. click **Load Incident**
+3. click **Run Agentic Analysis**
+4. review or edit the generated response
+5. click **Approve Agent Result**
+6. click **Write Approved Result to ServiceNow**
+7. verify the new entry in the incident Activity or Work notes section
+
 ---
 
 ## Current limitations
@@ -570,33 +652,34 @@ python -m streamlit run app/streamlit_app.py
 * the public dataset is synthetic
 * Groq is currently the only implemented LLM adapter
 * the agent uses only three approved tools
-* audit and write-back storage currently use local CSV files
-* there is no authentication or role-based access control
-* there is no production monitoring
-* the application is not yet connected to a ServiceNow instance
-* local mock write-back is not the same as ServiceNow `work_notes` write-back
+* audit logging and offline mock write-back use local CSV files
+* ServiceNow authentication is development-oriented and not production OAuth
+* ServiceNow knowledge articles are not yet retrieved
+* resolved ServiceNow incidents are not yet imported into retrieval
+* ServiceNow write-back currently targets only `work_notes`
+* live ServiceNow integration is manually validated rather than covered by automated integration tests
+* there is no application authentication or role-based access control
+* there is no production monitoring or deployment configuration
 
 ---
 
-## Planned ServiceNow phase
+## Next development steps
 
-ServiceNow integration will begin only after the current agentic workflow is stable.
+1. add automated tests around the ServiceNow service layer using mocked HTTP responses
+2. add a ServiceNow integration screenshot to the README
+3. retrieve resolved ServiceNow incidents for historical evidence
+4. retrieve ServiceNow knowledge articles
+5. add safer production authentication and role controls
+6. add ML baselines and evaluation metrics for ticket classification
 
-The planned sequence is:
+---
 
-1. connect to a free ServiceNow Personal Developer Instance
-2. enter an incident number in Streamlit
-3. load the incident through the ServiceNow REST API
-4. analyse the incident using the existing controlled agent
-5. allow a human to edit, approve, or reject the result
-6. write only the approved result to ServiceNow `work_notes`
-7. retrieve resolved ServiceNow incidents
-8. retrieve ServiceNow knowledge articles
+## Project status
 
-Until these API operations work, the project should be described as:
+The project can now be described accurately as:
 
 ```text
-Human-in-the-loop, GenAI-enabled, tool-using ITSM copilot
+A human-in-the-loop, GenAI-enabled, ServiceNow-integrated ITSM copilot with controlled agent tools and approval-gated work-note write-back.
 ```
 
-It should not yet be described as ServiceNow-integrated.
+The current ServiceNow integration is an MVP validated with a Personal Developer Instance, not a production deployment.
