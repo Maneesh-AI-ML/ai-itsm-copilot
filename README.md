@@ -397,6 +397,20 @@ If a retrieved historical resolution is vague, incomplete, or broken, the applic
 
 Example: controlled tool-using analysis with an editable response, human approval, local mock write-back confirmation, and visible tool trace.
 
+### ServiceNow integration
+
+<p align="center">
+  <img src="docs/images/servicenow-incident-load.png" width="95%" alt="ServiceNow incident loaded into AI ITSM Copilot">
+</p>
+
+Example: incident `INC0010010` loaded from ServiceNow and autofilled into the analysis workflow.
+
+<p align="center">
+  <img src="docs/images/servicenow-approved-writeback.png" width="95%" alt="Approved AI ITSM Copilot result written to ServiceNow work notes">
+</p>
+
+Example: human-approved agent result written successfully to ServiceNow `work_notes`, with the controlled tool trace visible.
+
 ---
 
 ## System architecture
