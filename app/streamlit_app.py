@@ -19,6 +19,7 @@ from servicenow_service import (
     add_work_note_to_incident,
     get_incident_by_number,
 )
+from ml_classifier import predict_ml_category
 from triage_assistant import create_triage_suggestion
 
 
@@ -32,6 +33,9 @@ st.set_page_config(
 # Session state
 if "suggestion" not in st.session_state:
     st.session_state.suggestion = None
+
+if "ml_result" not in st.session_state:
+    st.session_state.ml_result = None
 
 if "agent_result" not in st.session_state:
     st.session_state.agent_result = None
@@ -310,6 +314,8 @@ agent_button = st.button("Run Agentic Analysis")
 
 # Deterministic analysis
 if analyze_button:
+    st.session_state.ml_result = None
+
     if not ticket_text.strip():
         st.warning("Please enter a ticket description.")
 
@@ -317,11 +323,22 @@ if analyze_button:
         st.session_state.suggestion = create_triage_suggestion(
             ticket_text
         )
+
+        try:
+            st.session_state.ml_result = predict_ml_category(
+                ticket_text
+            )
+        except Exception:
+            st.session_state.ml_result = {
+                "error": (
+                    "ML supporting evidence is temporarily unavailable."
+                )
+            }
+
         st.session_state.review_status = "Pending human review"
 
         st.session_state.pop("user_response_editor", None)
         st.session_state.pop("internal_work_note_editor", None)
-
 
 # Agentic analysis
 if agent_button:
@@ -455,6 +472,46 @@ if suggestion is not None:
             "Assignment Group",
             suggestion["recommended_assignment_group"],
         )
+
+        ml_result = st.session_state.ml_result
+
+    if ml_result is not None:
+        st.subheader("Supporting ML Evidence")
+
+        if "error" in ml_result:
+            st.warning(ml_result["error"])
+
+        else:
+            ml_category = ml_result["predicted_category"]
+            rule_category = suggestion["recommended_category"]
+
+            st.write(
+                f"**Model:** {ml_result['model_name']}"
+            )
+
+            st.write(
+                f"**Predicted category:** {ml_category}"
+            )
+
+            st.write(
+                f"**Decision margin:** "
+                f"{ml_result['decision_margin']:.2f}"
+            )
+
+            if ml_category == rule_category:
+                st.success(
+                    "ML and rule-based classifications agree."
+                )
+            else:
+                st.warning(
+                    "ML and rule-based classifications disagree. "
+                    "Human review is required."
+                )
+
+            st.caption(
+                "The decision margin is not a probability. "
+                "ML output is supporting evidence only."
+            )
 
     st.subheader("Similar Past Ticket")
 
