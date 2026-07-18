@@ -411,6 +411,14 @@ Example: incident `INC0010010` loaded from ServiceNow and autofilled into the an
 
 Example: human-approved agent result written successfully to ServiceNow `work_notes`, with the controlled tool trace visible.
 
+### ML supporting evidence
+
+<p align="center">
+  <img src="docs/images/ml-supporting-evidence.png" width="95%" alt="Linear SVM supporting evidence compared with rule-based ticket classification">
+</p>
+
+Example: the rule-based classifier recommends `Network`, while the Linear SVM predicts `Access`. The disagreement is shown clearly and requires human review.
+
 ---
 
 ## System architecture
@@ -619,10 +627,20 @@ docs/results/ml_confusion_matrix.csv
 docs/results/ml_confusion_matrix.png
 docs/results/ml_top_confusions.csv
 docs/results/ml_misclassified_examples.csv
+```
+
+### Application integration
+
+The Streamlit application uses the Linear SVM as supporting evidence alongside the deterministic rule-based triage recommendation.
+
+The ML prediction does not automatically replace the rule-based category. When both methods disagree, the interface displays a warning and requires human review.
+
+The displayed decision margin is not a probability. The model is trained once and cached during the application process to avoid repeated training for every ticket.
+
 
 ## Automated tests
 
-The project currently includes fourteen passing automated tests.
+The project currently includes seventeen passing automated tests.
 
 Coverage includes:
 
@@ -635,6 +653,9 @@ Coverage includes:
 * blocked unapproved local write-back
 * approved local mock write-back
 * template fallback when the LLM fails
+* ML prediction output
+* empty-ticket validation for ML prediction
+* cached Linear SVM model training
 
 Run the tests with:
 
@@ -645,7 +666,7 @@ python -m unittest discover -s tests -v
 Expected result:
 
 ```text
-Ran 14 tests
+Ran 17 tests
 
 OK
 ```
