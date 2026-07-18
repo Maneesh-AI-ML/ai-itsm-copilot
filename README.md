@@ -1,4 +1,4 @@
-# AI ITSM Copilot
+﻿# AI ITSM Copilot
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)
@@ -550,6 +550,45 @@ data/mock_writeback.csv
 * Git and GitHub
 
 ---
+
+## ML classification baseline
+
+The project includes a reproducible text-classification baseline trained on the 4,265-ticket processed dataset.
+
+Training script:
+
+```text
+src/train_ml_baseline.py
+```
+
+The experiment uses:
+
+* TF-IDF word and bigram features
+* stratified 80/20 train-test split
+* fixed random state of 42
+* class-balanced Logistic Regression
+* class-balanced Linear SVM
+* accuracy, macro F1, weighted F1, and per-class metrics
+
+### Baseline results
+
+| Model | Accuracy | Macro F1 | Weighted F1 |
+| --- | ---: | ---: | ---: |
+| Logistic Regression | 0.8324 | 0.8151 | 0.8375 |
+| Linear SVM | **0.9097** | **0.8701** | **0.9089** |
+
+Linear SVM produced the strongest baseline result.
+
+Generated result files:
+
+```text
+docs/results/ml_baseline_metrics.json
+docs/results/ml_baseline_report.txt
+```
+
+> These scores measure prediction of the project’s rule-generated categories. The labels are not independently human-validated ground truth, so the results should not be presented as proven real-world production accuracy.
+
+The dataset is imbalanced. For example, the test split contains only seven Email tickets and 22 Hardware tickets. Macro F1 and per-class recall should therefore be considered alongside overall accuracy.
 
 ## Automated tests
 
