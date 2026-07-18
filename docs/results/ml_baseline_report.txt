@@ -1,0 +1,58 @@
+AI ITSM Copilot - ML Classification Baseline
+==================================================
+Dataset size: 4265
+Training rows: 3412
+Test rows: 853
+Random state: 42
+
+Class counts:
+- Access: 196
+- Email: 36
+- General: 627
+- Hardware: 108
+- Network: 688
+- Service Outage: 502
+- Software: 2108
+
+======================================================================
+Logistic Regression
+======================================================================
+Accuracy: 0.8324
+Macro F1: 0.8151
+Weighted F1: 0.8375
+
+                precision    recall  f1-score   support
+
+        Access       0.52      0.95      0.67        39
+         Email       1.00      0.71      0.83         7
+       General       0.69      0.84      0.76       125
+      Hardware       1.00      0.77      0.87        22
+       Network       0.88      0.78      0.83       138
+Service Outage       0.87      0.88      0.88       100
+      Software       0.91      0.83      0.87       422
+
+      accuracy                           0.83       853
+     macro avg       0.84      0.82      0.82       853
+  weighted avg       0.85      0.83      0.84       853
+
+
+======================================================================
+Linear SVM
+======================================================================
+Accuracy: 0.9097
+Macro F1: 0.8701
+Weighted F1: 0.9089
+
+                precision    recall  f1-score   support
+
+        Access       0.83      0.90      0.86        39
+         Email       1.00      0.71      0.83         7
+       General       0.87      0.87      0.87       125
+      Hardware       1.00      0.64      0.78        22
+       Network       0.95      0.88      0.91       138
+Service Outage       0.91      0.89      0.90       100
+      Software       0.92      0.95      0.93       422
+
+      accuracy                           0.91       853
+     macro avg       0.92      0.84      0.87       853
+  weighted avg       0.91      0.91      0.91       853

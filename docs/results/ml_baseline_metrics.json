@@ -1,0 +1,146 @@
+{
+  "dataset_size": 4265,
+  "train_size": 3412,
+  "test_size": 853,
+  "random_state": 42,
+  "test_fraction": 0.2,
+  "class_counts": {
+    "Access": 196,
+    "Email": 36,
+    "General": 627,
+    "Hardware": 108,
+    "Network": 688,
+    "Service Outage": 502,
+    "Software": 2108
+  },
+  "models": {
+    "Logistic Regression": {
+      "metrics": {
+        "accuracy": 0.8323563892145369,
+        "macro_f1": 0.8151463537348336,
+        "weighted_f1": 0.8375137771704804
+      },
+      "classification_report": {
+        "Access": {
+          "precision": 0.5211267605633803,
+          "recall": 0.9487179487179487,
+          "f1-score": 0.6727272727272727,
+          "support": 39.0
+        },
+        "Email": {
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "f1-score": 0.8333333333333334,
+          "support": 7.0
+        },
+        "General": {
+          "precision": 0.6862745098039216,
+          "recall": 0.84,
+          "f1-score": 0.7553956834532374,
+          "support": 125.0
+        },
+        "Hardware": {
+          "precision": 1.0,
+          "recall": 0.7727272727272727,
+          "f1-score": 0.8717948717948718,
+          "support": 22.0
+        },
+        "Network": {
+          "precision": 0.8780487804878049,
+          "recall": 0.782608695652174,
+          "f1-score": 0.8275862068965517,
+          "support": 138.0
+        },
+        "Service Outage": {
+          "precision": 0.8712871287128713,
+          "recall": 0.88,
+          "f1-score": 0.8756218905472637,
+          "support": 100.0
+        },
+        "Software": {
+          "precision": 0.9138381201044387,
+          "recall": 0.8293838862559242,
+          "f1-score": 0.8695652173913043,
+          "support": 422.0
+        },
+        "accuracy": 0.8323563892145369,
+        "macro avg": {
+          "precision": 0.8386536142389166,
+          "recall": 0.823960502519862,
+          "f1-score": 0.8151463537348336,
+          "support": 853.0
+        },
+        "weighted avg": {
+          "precision": 0.8546862703987564,
+          "recall": 0.8323563892145369,
+          "f1-score": 0.8375137771704804,
+          "support": 853.0
+        }
+      }
+    },
+    "Linear SVM": {
+      "metrics": {
+        "accuracy": 0.9097303634232122,
+        "macro_f1": 0.8700685749556911,
+        "weighted_f1": 0.9088956065879572
+      },
+      "classification_report": {
+        "Access": {
+          "precision": 0.8333333333333334,
+          "recall": 0.8974358974358975,
+          "f1-score": 0.8641975308641975,
+          "support": 39.0
+        },
+        "Email": {
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "f1-score": 0.8333333333333334,
+          "support": 7.0
+        },
+        "General": {
+          "precision": 0.8650793650793651,
+          "recall": 0.872,
+          "f1-score": 0.8685258964143426,
+          "support": 125.0
+        },
+        "Hardware": {
+          "precision": 1.0,
+          "recall": 0.6363636363636364,
+          "f1-score": 0.7777777777777778,
+          "support": 22.0
+        },
+        "Network": {
+          "precision": 0.9457364341085271,
+          "recall": 0.8840579710144928,
+          "f1-score": 0.9138576779026217,
+          "support": 138.0
+        },
+        "Service Outage": {
+          "precision": 0.9081632653061225,
+          "recall": 0.89,
+          "f1-score": 0.898989898989899,
+          "support": 100.0
+        },
+        "Software": {
+          "precision": 0.9157175398633257,
+          "recall": 0.95260663507109,
+          "f1-score": 0.9337979094076655,
+          "support": 422.0
+        },
+        "accuracy": 0.9097303634232122,
+        "macro avg": {
+          "precision": 0.9240042768129534,
+          "recall": 0.8352499791672615,
+          "f1-score": 0.8700685749556911,
+          "support": 853.0
+        },
+        "weighted avg": {
+          "precision": 0.9113665614241888,
+          "recall": 0.9097303634232122,
+          "f1-score": 0.9088956065879572,
+          "support": 853.0
+        }
+      }
+    }
+  }
+}
