@@ -1,0 +1,8 @@
+,Predicted: Access,Predicted: Email,Predicted: General,Predicted: Hardware,Predicted: Network,Predicted: Service Outage,Predicted: Software
+Actual: Access,35,0,0,0,0,1,3
+Actual: Email,0,5,0,0,0,0,2
+Actual: General,2,0,109,0,0,0,14
+Actual: Hardware,1,0,0,14,0,0,7
+Actual: Network,4,0,2,0,122,3,7
+Actual: Service Outage,0,0,1,0,6,89,4
+Actual: Software,0,0,14,0,1,5,402

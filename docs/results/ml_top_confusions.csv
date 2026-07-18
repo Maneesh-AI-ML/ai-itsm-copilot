@@ -1,0 +1,18 @@
+actual_category,predicted_category,count
+General,Software,14
+Software,General,14
+Network,Software,7
+Hardware,Software,7
+Service Outage,Network,6
+Software,Service Outage,5
+Network,Access,4
+Service Outage,Software,4
+Access,Software,3
+Network,Service Outage,3
+Network,General,2
+Email,Software,2
+General,Access,2
+Access,Service Outage,1
+Hardware,Access,1
+Service Outage,General,1
+Software,Network,1
